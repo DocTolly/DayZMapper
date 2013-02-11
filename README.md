@@ -1,3 +1,5 @@
+<b>DayZ Mapper is created by zamp for Bliss installations. This is a modified version of his work for Pwn/Stapo and vanilla builds.</b>
+
 <b>Supported Maps</b>
 <pre>
 - Chernarus
