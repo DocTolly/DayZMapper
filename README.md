@@ -24,7 +24,7 @@ You need to add the column `UpdateTime` to your `character_data` table. If you a
 Query your database (Navicat CTRL + Q) and execute this:
 
 ALTER TABLE `character_data`
-ADD COLUMN `UpdateTime`  timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `Timestamp`;
+ADD COLUMN `UpdateTime`  timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP;
 
 </pre>
 
