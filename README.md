@@ -21,6 +21,24 @@ will need either apache or some other http server that can handle php)
 5. Point your browser to wherever you copied stuff to.
 </pre>
 
+<b>Database modifications:</b>
+
+<pre>
+You need to add the column `UpdateTime` to your `character_data` table. If you are using pwnoz0rs build, skip this step and read the "For Pwnoz0r" section.
+
+Query your database (Navicat CTRL + Q) and execute this:
+
+ALTER TABLE `character_data`
+ADD COLUMN `UpdateTime`  timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `Timestamp`;
+
+</pre>
+
+<b>For Pwnoz0rs builds:</b>
+
+<pre>
+Pwns builds already use last_updated column so you do not need to add UpdateTime. Instead, open your data.php and change any occurance of `UpdateTime` to `last_updated`
+</pre>
+
 <b>TODO:</b>
 <pre>
 - Toggle for showing out of map positions
