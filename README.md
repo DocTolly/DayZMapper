@@ -11,6 +11,11 @@ will need either apache or some other http server that can handle php)
 5. Point your browser to wherever you copied stuff to.
 </pre>
 
+<b>Selecting the correct.data.php</b>
+<pre>
+If you use the original functions for your build, use the default /bin/data.php. If you use my Improved Vehicle Spawn functions (or any of my guides that use a Landmark column in object_data), you can rename doc-data.php to data.php and continue with this guide.
+</pre>
+
 <b>Database modifications:</b>
 
 <pre>
