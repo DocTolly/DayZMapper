@@ -1,4 +1,4 @@
-<b>DayZ Mapper is created by zamp for Bliss installations. This is a modified version of his work for Pwn/Stapo and vanilla builds.</b>
+This is a modified version of zamp's DayZMapper to work with Pwn/Stapo and vanilla builds.</b>
 
 <b>How to install:</b>
 
