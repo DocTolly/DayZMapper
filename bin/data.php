@@ -1,129 +1,163 @@
 <?php
-// Works with schema 0.36
+// works with schema 0.27
 error_reporting(0);
 
 header('Content-Type: text/plain');
-// Avoid browser caching
-header('Cache-Control: no-cache, must-revalidate');
-header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+// added to maybe fix cache blowing up to insane size
+header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
+header('Expires: Sat, 26 Jul 1997 05:00:00 GMT'); // Date in the past
 
-include('config.php');
-
-try {
-	$db = new PDO('mysql:host='.$db['host'].';port='.$db['port'].';dbname='.$db['database'], $db['user'], $db['password']);
-} catch(PDOException $e) {
-	die($e -> getMessage());
-}
+require_once 'ServerCon.php';
+$db = new DatabaseConnection();
 
 echo '<stuff>' . "\n";
-echo "\t<icons>".($config['icons']?"true":"false")."</icons>\n";
 
-// Fetch players
-$query = $db->prepare("SELECT
-	s.id,
-	s.model,
-	s.state,
-	s.worldspace,
-	s.inventory,
-	p.name,
-	p.humanity,
-	s.last_updated,
-	concat(s.survivor_kills, ' (', p.total_survivor_kills, ')') survivor_kills,
-	concat(s.bandit_kills, ' (', p.total_bandit_kills, ')') bandit_kills
+
+$res = mysql_query("SELECT
+	s.PlayerUID,
+	s.Model,
+	s.Worldspace,
+	s.Inventory,
+	s.Humanity,
+	p.PlayerName,
+	s.Datestamp,
+	concat(s.KillsH, ' (', s.KillsH, ')') survivor_kills,
+	concat(s.KillsB, ' (', s.KillsB, ')') bandit_kills
 FROM
-	survivor s
+	character_data s
 INNER JOIN
-	profile p on p.unique_id = s.unique_id
+	player_data p on p.PlayerUID = s.PlayerUID
 WHERE
-	s.last_updated > DATE_SUB(now(), INTERVAL 5 MINUTE)
+	s.UpdateTime > DATE_SUB(now(), INTERVAL 5 MINUTE)
 AND
-	s.is_dead = 0");
+	s.Alive = 1
+") or die(mysql_error());
 
-$query->execute(array($config['instance']));
-$rows = $query->fetchAll(PDO::FETCH_ASSOC);
-
-foreach($rows as $row)
+while($row = mysql_fetch_assoc($res))
 {
-	$posArray = json_decode($row['worldspace']);
 	
-	$row['x'] = $posArray[1][0];
-	$row['y'] = -($posArray[1][1]-15365);
+	$explo_worldspace = $row['Worldspace'];
+				
+				$explo_worldspace = str_replace('[','',$explo_worldspace);
+				$explo_worldspace = str_replace(']','',$explo_worldspace);
+				$space = explode(',',$explo_worldspace);
+				
+	//$res2 = mysql_query("SELECT PlayerName from player_data WHERE PlayerUID = '".$row['PlayerUID']."'");
+	//$row2 = mysql_fetch_assoc($res2);	
+							
+				
+	$row['x'] = $space[1];
+	$row['y'] = -($space[2]-15365);
 	
-	$row['age'] = strtotime($row['last_updated']) - time();
-	$row['name'] = htmlspecialchars($row['name']);
+	$row['age'] = strtotime($row['Datestamp']) - time();
+	//$row['name'] = htmlspecialchars($row2['Playername']);
 	
 	echo "\t" . '<player>' . "\n";
 	foreach($row as $k => $v)
 	{
+		
+		switch($k) {
+			case "Model": $k = "model"; break;
+			case "Alive": $k = "state"; $v = ($v == 1) ? 0 : 1; break;
+			case "Worldspace": $k = "worldspace"; break; 
+			case "PlayerName": $k = "name"; break;
+			case "Humanity": $k = "humanity"; break;
+			case "Inventory": $k = "inventory"; break;
+			case "Datestamp": $k = "last_updated"; $v = strtotime($v); break;
+			case "PlayerUID": $k = "id"; break;
+			default: break;
+		}
 		echo "\t\t" . '<' . $k . '><![CDATA[' . $v . ']]></' . $k . '>' . "\n";
 	}
 	echo "\t" . '</player>' . "\n";
 }
-
-// Fetch vehicles
-$query = $db->prepare("SELECT
-	iv.id as id,
-	iv.worldspace,
-	v.class_name otype,
-	iv.inventory,
-	iv.last_updated
+$res = mysql_query("SELECT
+	ObjectID,
+	ObjectUID,
+	Worldspace,
+	Classname,
+	Inventory,
+	Datestamp
 FROM
-	instance_vehicle iv
-JOIN
-	world_vehicle wv on iv.world_vehicle_id = wv.id
-JOIN
-	vehicle v on wv.vehicle_id = v.id
+	object_data
 WHERE
-	iv.instance_id = ?");
+	Classname != 'dummy' AND Classname != 'TentStorage' AND Classname != 'Hedgehog_DZ' AND Classname != 'Wire_cat1' AND Classname != 'Sandbag1_DZ' AND Classname != 'TrapBear'
+") or die(mysql_error());
 
-$query->execute(array($config['instance']));
-$rows = $query->fetchAll(PDO::FETCH_ASSOC);
-
-foreach($rows as $row)
+while($row =mysql_fetch_assoc($res))
 {
-	$posArray = json_decode($row["worldspace"]);
+	$explo_worldspace = $row['Worldspace'];
+				
+				$explo_worldspace = str_replace('[','',$explo_worldspace);
+				$explo_worldspace = str_replace(']','',$explo_worldspace);
+				$space = explode(',',$explo_worldspace);
+				
+				
+	$row['x'] = $space[1];
+	$row['y'] = -($space[2]-15365);
 	
-	$row['x'] = $posArray[1][0];
-	$row['y'] = -($posArray[1][1]-15365);
-	
-	$row['age'] = strtotime($row['last_updated']) - time();
+	$row['age'] = strtotime($row['Datestamp']) - time();
 	
 	echo "\t" . '<vehicle>' . "\n";
 	foreach($row as $k => $v)
 	{
-		echo "\t\t" . '<' . $k . '><![CDATA[' . $v . ']]></' . $k . '>' . "\n";
-	}
+		switch($k) {
+			case "Worldspace": $k = "worldspace"; break; 
+			case "Classname": $k = "otype"; break;
+			case "Inventory": $k = "inventory"; break;
+			case "Datestamp": $k = "last_updated"; $v = round(strtotime($row['Datestamp']) - time()); break;
+			case "ObjectID": $k = "id"; break;
+			//case "ObjectUID": $k = "world_vehicle_id"; break;
+                        case "ObjectUID": $k = false; break;
+			default: break;
+		}
+                if ($k) {
+                    echo "\t\t" . '<' . $k . '><![CDATA[' . $v . ']]></' . $k . '>' . "\n";
+                }
+	}   
 	echo "\t" . '</vehicle>' . "\n";
 }
 
-// Fetch deployables
-$query = $db->prepare("SELECT
-	id.id,
-	id.worldspace,
-	d.class_name otype,
-	id.inventory,
-	id.last_updated
+$query = mysql_query("SELECT
+	ObjectID,
+	Worldspace,
+	Classname,
+	Inventory,
+	Datestamp
 FROM
-	instance_deployable id
-JOIN
-	deployable d on	d.id = id.deployable_id
+	object_data
 WHERE
-	id.instance_id = ?");
+	Classname = 'TentStorage'
+") or die(mysql_error());
 
-$query->execute(array($config['instance']));
-$rows = $query->fetchAll(PDO::FETCH_ASSOC);
-
-foreach($rows as $row)
+while($row =mysql_fetch_assoc($query))
 {
-	$posArray = json_decode($row['worldspace']);
-	
-	$row['x'] = $posArray[1][0];
-	$row['y'] = -($posArray[1][1]-15365);
+	$explo_worldspace = $row['Worldspace'];
+				
+				$explo_worldspace = str_replace('[','',$explo_worldspace);
+				$explo_worldspace = str_replace(']','',$explo_worldspace);
+				$space = explode(',',$explo_worldspace);
+				
+				
+	$row['x'] = $space[1];
+	$row['y'] = -($space[2]-15365);
 	
 	echo "\t" . '<deployable>' . "\n";
 	foreach($row as $k => $v)
 	{
-		echo "\t\t" . '<' . $k . '><![CDATA[' . $v . ']]></' . $k . '>' . "\n";
+		switch($k) {
+			case "Worldspace": $k = "worldspace"; break; 
+			case "Classname": $k = "otype"; break;
+			case "Inventory": $k = "inventory"; break;
+			case "Datestamp": $k = "last_updated"; $v = strtotime($v); break;
+			case "ObjectID": $k = "id"; break;
+			//case "ObjectUID": $k = "world_vehicle_id"; break;
+                        case "ObjectUID": $k = false; break;
+			default: break;
+		}
+                if ($k) {
+                    echo "\t\t" . '<' . $k . '><![CDATA[' . $v . ']]></' . $k . '>' . "\n";
+                }
 	}
 	echo "\t" . '</deployable>' . "\n";
 }
